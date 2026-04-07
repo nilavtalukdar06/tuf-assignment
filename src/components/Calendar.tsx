@@ -1,19 +1,17 @@
-"use client";
-
-import { useState, useCallback } from "react";
+import { useCallback, useState } from "react";
+import CalendarHeader from "./CalendarHeader";
+import Sidebar from "./Sidebar";
+import CalendarGrid from "./CalendarGrid";
 
 interface DayNote {
   text: string;
 }
-
 interface CalendarState {
   startDate: Date | null;
   endDate: Date | null;
   notes: Record<string, DayNote>;
   generalNote: string;
 }
-
-const DAYS_OF_WEEK = ["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"];
 
 const HERO_IMAGES: string[] = [
   "https://images.unsplash.com/photo-1551582045-6ec9c11d8697?w=900&q=80",
@@ -28,21 +26,6 @@ const HERO_IMAGES: string[] = [
   "https://images.unsplash.com/photo-1419242902214-272b3f66ee7a?w=900&q=80",
   "https://images.unsplash.com/photo-1418985991508-e47386d96a71?w=900&q=80",
   "https://images.unsplash.com/photo-1491002052546-bf38f186af56?w=900&q=80",
-];
-
-const MONTH_NAMES = [
-  "JANUARY",
-  "FEBRUARY",
-  "MARCH",
-  "APRIL",
-  "MAY",
-  "JUNE",
-  "JULY",
-  "AUGUST",
-  "SEPTEMBER",
-  "OCTOBER",
-  "NOVEMBER",
-  "DECEMBER",
 ];
 
 function dateKey(d: Date) {
@@ -135,24 +118,22 @@ export default function WallCalendar() {
     } else setViewMonth((m) => m + 1);
   };
 
-  const handleDayClick = useCallback(
-    (day: Date, isCurrentMonth: boolean) => {
-      if (!isCurrentMonth) return;
-      setState((prev) => {
-        if (selecting === "start" || (prev.startDate && prev.endDate)) {
-          setSelecting("end");
-          return { ...prev, startDate: day, endDate: null };
-        } else {
-          setSelecting("start");
-          const [s, e] = [prev.startDate!, day].sort(
-            (a, b) => a.getTime() - b.getTime(),
-          );
-          return { ...prev, startDate: s, endDate: e };
-        }
-      });
-    },
-    [selecting],
-  );
+  const handleDayClick = useCallback((day: Date, isCurrentMonth: boolean) => {
+    if (!isCurrentMonth) return;
+    setState((prev) => {
+      // If no start date set, set start and switch to selecting end
+      if (!prev.startDate || (prev.startDate && prev.endDate)) {
+        setSelecting("end");
+        return { ...prev, startDate: day, endDate: null };
+      }
+
+      // otherwise set end date (sort to ensure start <= end)
+      const start = prev.startDate!;
+      const [s, e] = [start, day].sort((a, b) => a.getTime() - b.getTime());
+      setSelecting("start");
+      return { ...prev, startDate: s, endDate: e };
+    });
+  }, []);
 
   const getDayClasses = (day: Date, isCurrentMonth: boolean): string => {
     const base =
@@ -188,15 +169,11 @@ export default function WallCalendar() {
     return cls;
   };
 
-  const getRangeWrapClass = (
-    day: Date,
-    isCurrentMonth: boolean,
-    colIdx: number,
-  ): string => {
+  const getRangeWrapClass = (day: Date, isCurrentMonth: boolean): string => {
     if (!isCurrentMonth || !state.startDate || !state.endDate) return "";
     const inRange = isInRange(day, state.startDate, state.endDate);
-    const isStart = isSameDay(day, state.startDate);
-    const isEnd = isSameDay(day, state.endDate);
+    const isStart = isSameDay(day, state.startDate!);
+    const isEnd = isSameDay(day, state.endDate!);
     if (isStart) return "bg-[#d0e8f7] rounded-l-full";
     if (isEnd) return "bg-[#d0e8f7] rounded-r-full";
     if (inRange) return "bg-[#d0e8f7]";
@@ -238,200 +215,37 @@ export default function WallCalendar() {
       >
         <SpiralRings />
 
-        <div
-          className="relative w-full overflow-hidden"
-          style={{ height: "260px" }}
-        >
-          <img
-            src={heroImg}
-            alt={MONTH_NAMES[viewMonth]}
-            className="w-full h-full object-cover transition-all duration-700"
-            style={{ objectPosition: "center 40%" }}
-          />
-          <div
-            className="absolute bottom-0 right-0"
-            style={{
-              width: 0,
-              height: 0,
-              borderStyle: "solid",
-              borderWidth: "0 0 90px 200px",
-              borderColor: "transparent transparent #1a6bbf transparent",
-            }}
-          />
-          <div className="absolute bottom-3 right-4 text-right text-white leading-tight z-10">
-            <div className="text-sm font-light opacity-90 tracking-widest">
-              {viewYear}
-            </div>
-            <div className="text-2xl font-bold tracking-[0.15em]">
-              {MONTH_NAMES[viewMonth]}
-            </div>
-          </div>
-
-          <button
-            onClick={prevMonth}
-            className="absolute top-3 left-3 w-8 h-8 rounded-full bg-black/30 hover:bg-black/50 text-white flex items-center justify-center transition-colors z-10 text-sm"
-          >
-            ‹
-          </button>
-          <button
-            onClick={nextMonth}
-            className="absolute top-3 right-3 w-8 h-8 rounded-full bg-black/30 hover:bg-black/50 text-white flex items-center justify-center transition-colors z-10 text-sm"
-          >
-            ›
-          </button>
-        </div>
+        <CalendarHeader
+          viewMonth={viewMonth}
+          viewYear={viewYear}
+          heroImg={heroImg}
+          prevMonth={prevMonth}
+          nextMonth={nextMonth}
+        />
 
         <div className="flex flex-col sm:flex-row">
-          <div className="w-full sm:w-36 border-b sm:border-b-0 sm:border-r border-gray-200 p-4 flex-shrink-0 bg-[#fafafa]">
-            <div className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3">
-              Notes
-            </div>
+          <Sidebar
+            state={state}
+            setState={setState}
+            rangeLabel={rangeLabel}
+            activeNoteDay={activeNoteDay}
+            setActiveNoteDay={setActiveNoteDay}
+            noteInput={noteInput}
+            setNoteInput={setNoteInput}
+            saveNote={saveNote}
+          />
 
-            <textarea
-              value={state.generalNote}
-              onChange={(e) =>
-                setState((prev) => ({ ...prev, generalNote: e.target.value }))
-              }
-              placeholder="Monthly memo…"
-              className="w-full text-[11px] text-gray-600 bg-transparent resize-none outline-none placeholder:text-gray-300"
-              style={{
-                lineHeight: "1.8",
-                height: "80px",
-                backgroundImage:
-                  "repeating-linear-gradient(transparent, transparent 26px, #e5e7eb 26px, #e5e7eb 27px)",
-                backgroundSize: "100% 27px",
-              }}
-            />
-
-            {(state.startDate || state.endDate) && (
-              <div className="mt-3 pt-3 border-t border-gray-200">
-                <div className="text-[9px] text-gray-400 uppercase tracking-wider mb-1">
-                  Selection
-                </div>
-                <div className="text-[10px] text-[#1a6bbf] font-medium leading-snug">
-                  {rangeLabel()}
-                </div>
-                {state.startDate && state.endDate && (
-                  <button
-                    onClick={() =>
-                      setState((prev) => ({
-                        ...prev,
-                        startDate: null,
-                        endDate: null,
-                      }))
-                    }
-                    className="mt-1 text-[9px] text-gray-400 hover:text-red-400 transition-colors"
-                  >
-                    Clear
-                  </button>
-                )}
-              </div>
-            )}
-            {activeNoteDay && (
-              <div className="mt-3 pt-3 border-t border-gray-200">
-                <div className="text-[9px] text-gray-400 uppercase tracking-wider mb-1">
-                  Note for{" "}
-                  {new Date(activeNoteDay).toLocaleDateString("en-GB", {
-                    day: "numeric",
-                    month: "short",
-                  })}
-                </div>
-                <textarea
-                  value={noteInput}
-                  onChange={(e) => setNoteInput(e.target.value)}
-                  className="w-full text-[10px] border border-gray-200 rounded p-1 outline-none focus:border-[#1a6bbf] resize-none"
-                  rows={3}
-                  autoFocus
-                />
-                <div className="flex gap-1 mt-1">
-                  <button
-                    onClick={saveNote}
-                    className="text-[9px] bg-[#1a6bbf] text-white px-2 py-0.5 rounded hover:bg-[#155fa0] transition-colors"
-                  >
-                    Save
-                  </button>
-                  <button
-                    onClick={() => {
-                      setActiveNoteDay(null);
-                      setNoteInput("");
-                    }}
-                    className="text-[9px] text-gray-400 hover:text-gray-600 transition-colors"
-                  >
-                    Cancel
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
-
-          <div className="flex-1 p-4">
-            <div className="grid grid-cols-7 mb-1">
-              {DAYS_OF_WEEK.map((d) => (
-                <div
-                  key={d}
-                  className={`text-center text-[9px] font-bold tracking-widest pb-1 ${d === "SAT" || d === "SUN" ? "text-[#1a6bbf]" : "text-gray-400"}`}
-                >
-                  {d}
-                </div>
-              ))}
-            </div>
-
-            {grid.map((row, ri) => (
-              <div key={ri} className="grid grid-cols-7">
-                {row.map((day, ci) => {
-                  if (!day) return <div key={ci} />;
-                  const isCurrentMonth = day.getMonth() === viewMonth;
-                  const key = dateKey(day);
-                  return (
-                    <div
-                      key={ci}
-                      className={`flex items-center justify-center py-[3px] ${getRangeWrapClass(day, isCurrentMonth, ci)}`}
-                    >
-                      <div
-                        className={getDayClasses(day, isCurrentMonth)}
-                        onClick={() => handleDayClick(day, isCurrentMonth)}
-                        onContextMenu={(e) => {
-                          if (!isCurrentMonth) return;
-                          e.preventDefault();
-                          setActiveNoteDay(key);
-                          setNoteInput(state.notes[key]?.text ?? "");
-                        }}
-                        title={
-                          isCurrentMonth
-                            ? "Click to select • Right-click to add note"
-                            : undefined
-                        }
-                      >
-                        {day.getDate()}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            ))}
-
-            <div className="mt-4 pt-3 border-t border-gray-100 flex items-center gap-4 flex-wrap">
-              <div className="flex items-center gap-1">
-                <div className="w-2.5 h-2.5 rounded-full bg-[#1a6bbf]" />
-                <span className="text-[9px] text-gray-400">Start / End</span>
-              </div>
-              <div className="flex items-center gap-1">
-                <div className="w-2.5 h-2.5 rounded bg-[#d0e8f7]" />
-                <span className="text-[9px] text-gray-400">Range</span>
-              </div>
-              <div className="flex items-center gap-1">
-                <div className="w-2.5 h-2.5 rounded-full ring-2 ring-[#1a6bbf]" />
-                <span className="text-[9px] text-gray-400">Today</span>
-              </div>
-              <div className="flex items-center gap-1">
-                <div className="w-2.5 h-2.5 rounded-full bg-amber-400" />
-                <span className="text-[9px] text-gray-400">Has note</span>
-              </div>
-              <span className="text-[9px] text-gray-300 ml-auto hidden sm:block">
-                Right-click day → note
-              </span>
-            </div>
-          </div>
+          <CalendarGrid
+            grid={grid}
+            viewMonth={viewMonth}
+            getDayClasses={getDayClasses}
+            getRangeWrapClass={getRangeWrapClass}
+            handleDayClick={handleDayClick}
+            state={state}
+            setActiveNoteDay={setActiveNoteDay}
+            setNoteInput={setNoteInput}
+            dateKey={dateKey}
+          />
         </div>
         <div className="bg-[#1a6bbf] h-1.5 w-full" />
       </div>
