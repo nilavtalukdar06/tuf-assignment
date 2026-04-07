@@ -17,7 +17,7 @@ const HERO_IMAGES: string[] = [
   "https://images.unsplash.com/photo-1551582045-6ec9c11d8697?w=900&q=80",
   "https://images.unsplash.com/photo-1477601263568-180e2c6d046e?w=900&q=80",
   "https://images.unsplash.com/photo-1462275646964-a0e3386b89fa?w=900&q=80",
-  "https://images.unsplash.com/photo-1490750967868-88df5691cc94?w=900&q=80",
+  "https://images.unsplash.com/photo-1501854140801-50d01698950b?w=900&q=80",
   "https://images.unsplash.com/photo-1501854140801-50d01698950b?w=900&q=80",
   "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=900&q=80",
   "https://images.unsplash.com/photo-1473116763249-2faaef81ccda?w=900&q=80",
